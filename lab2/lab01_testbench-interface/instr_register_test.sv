@@ -21,6 +21,7 @@ module instr_register_test
 
   timeunit 1ns / 1ns;
   parameter read_number = 20, write_number = 20;
+  int number_of_errors_per_test = 0;
   int seed = 555;
 
   initial begin
@@ -58,9 +59,11 @@ module instr_register_test
       // the expected values to be read back
       @(posedge clk) read_pointer = i;
       @(negedge clk) print_results;
+      check_result;
     end
 
     @(posedge clk);
+    $display("\nNumber of errors during TEST: %0d", number_of_errors_per_test);
     $display("\n***********************************************************");
     $display("***  THIS IS NOT A SELF-CHECKING TESTBENCH (YET).  YOU  ***");
     $display("***  NEED TO VISUALLY VERIFY THAT THE OUTPUT VALUES     ***");
@@ -100,6 +103,33 @@ module instr_register_test
   endfunction : print_results
 
   function void check_result;
-    // de implementat tema 2
-  endfunction: check_result
+    operand_result_t exp_result;
+
+    if (instruction_word.opc == ZERO) begin
+      exp_result = 'b0;
+    end else if (instruction_word.opc == PASSA) begin
+      exp_result = instruction_word.op_a;
+    end else if (instruction_word.opc == PASSB) begin
+      exp_result = instruction_word.op_b;
+    end else if (instruction_word.opc == ADD) begin
+      exp_result = instruction_word.op_a + instruction_word.op_b;
+    end else if (instruction_word.opc == SUB) begin
+      exp_result = instruction_word.op_a - instruction_word.op_b;
+    end else if (instruction_word.opc == MULT) begin
+      exp_result = instruction_word.op_a * instruction_word.op_b;
+    end else if (instruction_word.opc == DIV) begin
+      if (instruction_word.op_b == 0) begin
+        number_of_errors_per_test++;
+        return;
+      end else begin
+        exp_result = instruction_word.op_a / instruction_word.op_b;
+      end
+    end else if (instruction_word.opc == MOD) begin
+      exp_result = instruction_word.op_a % instruction_word.op_b;
+    end
+
+    if (exp_result != instruction_word.result) begin
+      number_of_errors_per_test++;
+    end
+  endfunction : check_result
 endmodule : instr_register_test
