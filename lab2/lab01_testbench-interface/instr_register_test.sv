@@ -125,7 +125,12 @@ module instr_register_test
         exp_result = instruction_word.op_a / instruction_word.op_b;
       end
     end else if (instruction_word.opc == MOD) begin
-      exp_result = instruction_word.op_a % instruction_word.op_b;
+      if (instruction_word.op_b == 0) begin
+        number_of_errors_per_test++;
+        return;
+      end else begin
+        exp_result = instruction_word.op_a % instruction_word.op_b;
+      end
     end
 
     if (exp_result != instruction_word.result) begin
