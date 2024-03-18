@@ -22,11 +22,13 @@ module instr_register_test
   timeunit 1ns / 1ns;
   parameter read_number = 20, write_number = 20;
   int number_of_errors_per_test = 0;
+  int failed_tests_per_test = 0;
   int seed = 555;
+  instruction_t iw_reg_test[0:31];
 
   initial begin
     $display("\n\n***********************************************************");
-    $display("***  THIS IS NOT A SELF-CHECKING TESTBENCH (YET).  YOU  ***");
+    $display("***  THIS IS A SELF-CHECKING TESTBENCH (YET). YOU DON'T ***");
     $display("***  NEED TO VISUALLY VERIFY THAT THE OUTPUT VALUES     ***");
     $display("***  MATCH THE INPUT VALUES FOR EACH REGISTER LOCATION  ***");
     $display("***********************************************************");
@@ -46,6 +48,7 @@ module instr_register_test
     repeat (write_number) begin
       @(posedge clk) randomize_transaction;
       @(negedge clk) print_transaction;
+      save_test_data;
     end
     @(posedge clk) load_en = 1'b0;  // turn-off writing to register
 
@@ -64,11 +67,13 @@ module instr_register_test
 
     @(posedge clk);
     $display("\nNumber of errors during TEST: %0d", number_of_errors_per_test);
-    $display("\n***********************************************************");
-    $display("***  THIS IS NOT A SELF-CHECKING TESTBENCH (YET).  YOU  ***");
+    $display("\nNumber of failed tests: %0d / %0d", number_of_errors_per_test, write_number);
+
+    $display("\n\n***********************************************************");
+    $display("***  THIS IS A SELF-CHECKING TESTBENCH (YET). YOU DON'T ***");
     $display("***  NEED TO VISUALLY VERIFY THAT THE OUTPUT VALUES     ***");
     $display("***  MATCH THE INPUT VALUES FOR EACH REGISTER LOCATION  ***");
-    $display("***********************************************************\n");
+    $display("***********************************************************");
     $finish;
   end
 
@@ -103,38 +108,50 @@ module instr_register_test
   endfunction : print_results
 
   function void check_result;
-    operand_result_t exp_result;
-
-    if (instruction_word.opc == ZERO) begin
-      exp_result = 'b0;
-    end else if (instruction_word.opc == PASSA) begin
-      exp_result = instruction_word.op_a;
-    end else if (instruction_word.opc == PASSB) begin
-      exp_result = instruction_word.op_b;
-    end else if (instruction_word.opc == ADD) begin
-      exp_result = instruction_word.op_a + instruction_word.op_b;
-    end else if (instruction_word.opc == SUB) begin
-      exp_result = instruction_word.op_a - instruction_word.op_b;
-    end else if (instruction_word.opc == MULT) begin
-      exp_result = instruction_word.op_a * instruction_word.op_b;
-    end else if (instruction_word.opc == DIV) begin
-      if (instruction_word.op_b == 0) begin
-        number_of_errors_per_test++;
-        return;
-      end else begin
-        exp_result = instruction_word.op_a / instruction_word.op_b;
-      end
-    end else if (instruction_word.opc == MOD) begin
-      if (instruction_word.op_b == 0) begin
-        number_of_errors_per_test++;
-        return;
-      end else begin
-        exp_result = instruction_word.op_a % instruction_word.op_b;
-      end
+    static bit has_error_arisen = 1'b0;
+    if (iw_reg_test[read_pointer].opc != instruction_word.opc) begin
+      number_of_errors_per_test++;
+      $display("Operation Code of transaction does not match to the testbench one!");
+      has_error_arisen = 1'b1;
     end
 
-    if (exp_result != instruction_word.result) begin
+    if (iw_reg_test[read_pointer].op_a != instruction_word.op_a) begin
       number_of_errors_per_test++;
+      $display("Operand A of transaction does not match to the testbench one!");
+      has_error_arisen = 1'b1;
+    end
+
+    if (iw_reg_test[read_pointer].op_b != instruction_word.op_b) begin
+      number_of_errors_per_test++;
+      $display("Operand B of transaction does not match to the testbench one!");
+      has_error_arisen = 1'b1;
+    end
+
+    if (iw_reg_test[read_pointer].result != instruction_word.result) begin
+      number_of_errors_per_test++;
+      $display("Result of transaction does not match to the testbench one!");
+      has_error_arisen = 1'b1;
+    end
+    if (has_error_arisen) begin
+      $display("Transaction {%s, %0d, %0d, %0d} failed!\n\n", instruction_word.opc,
+               instruction_word.op_a, instruction_word.op_b, instruction_word.result);
+      failed_tests_per_test++;
+      has_error_arisen = 1'b0;
     end
   endfunction : check_result
+
+  function void save_test_data;
+    operand_result_t local_result;
+    case (opcode)
+      ZERO:  local_result = {64{1'b0}};
+      PASSA: local_result = operand_a;
+      PASSB: local_result = operand_b;
+      ADD:   local_result = operand_a + operand_b;
+      SUB:   local_result = operand_a - operand_b;
+      MULT:  local_result = operand_a * operand_b;
+      DIV:   local_result = operand_b ? operand_a / operand_b : {64{1'b0}};
+      MOD:   local_result = operand_b ? operand_a % operand_b : {64{1'b0}};
+    endcase
+    iw_reg_test[write_pointer] = '{opcode, operand_a, operand_b, local_result};
+  endfunction : save_test_data
 endmodule : instr_register_test

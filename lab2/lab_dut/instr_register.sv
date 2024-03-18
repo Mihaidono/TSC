@@ -33,7 +33,6 @@ module instr_register
     end 
     else begin
       if (load_en) begin
-        // iw_reg[write_pointer] = '{opcode,operand_a,operand_b};
         case (opcode)
           ZERO:  iw_reg[write_pointer] = '{opcode, operand_a, operand_b, {64{1'b0}}};
           PASSA: iw_reg[write_pointer] = '{opcode, operand_a, operand_b, operand_a};
@@ -42,7 +41,7 @@ module instr_register
           SUB:   iw_reg[write_pointer] = '{opcode, operand_a, operand_b, operand_a - operand_b};
           MULT:  iw_reg[write_pointer] = '{opcode, operand_a, operand_b, operand_a * operand_b};
           DIV:   iw_reg[write_pointer] = '{opcode, operand_a, operand_b, operand_b ? operand_a / operand_b : {64{1'b0}}};
-          MOD:   iw_reg[write_pointer] = '{opcode, operand_a, operand_b, operand_a % operand_b};
+          MOD:   iw_reg[write_pointer] = '{opcode, operand_a, operand_b, operand_b ? operand_a % operand_b : {64{1'b0}}};
         endcase
       end  // in caz de eroare sv truncheaza -> da overflow si taie ce da overflow
     end
