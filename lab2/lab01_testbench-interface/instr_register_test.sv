@@ -20,7 +20,8 @@ module instr_register_test
 );
 
   timeunit 1ns / 1ns;
-  parameter read_number = 20, write_number = 20;
+  parameter read_number = 30, write_number = 30;
+  parameter write_order = 2, read_order = 2;
   int number_of_errors_per_test = 0;
   int failed_tests_per_test = 0;
   int seed = 555;
@@ -38,6 +39,9 @@ module instr_register_test
     read_pointer  = 5'h1F;  // initialize read pointer
     load_en       = 1'b0;  // initialize load control line
     reset_n <= 1'b0;  // assert reset_n (active low)
+    foreach (iw_reg_test[i]) begin
+      iw_reg_test[i] = '{opc: ZERO, default: 0};
+    end
     repeat (2) @(posedge clk);  // hold in reset for 2 clock cycles
     reset_n = 1'b1;  // deassert reset_n (active low)
 
@@ -60,14 +64,21 @@ module instr_register_test
       // later labs will replace this loop with iterating through a
       // scoreboard to determine which addresses were written and
       // the expected values to be read back
-      @(posedge clk) read_pointer = i;
+      @(posedge clk)
+        case (read_order)
+          0: read_pointer = i;
+          1: read_pointer = $unsigned($random) % 32;
+          2: read_pointer = 31 - (i % 32);
+        endcase
       @(negedge clk) print_results;
       check_result;
+
     end
 
     @(posedge clk);
-    $display("\nNumber of errors during TEST: %0d", number_of_errors_per_test);
-    $display("\nNumber of failed tests: %0d / %0d", number_of_errors_per_test, write_number);
+    $display("\nNumber of errors per transactions: %0d", number_of_errors_per_test);
+    $display("\nNumber of failed tests: %0d", failed_tests_per_test);
+    $display("\nFailed tests percentage: %0.2f%%", (failed_tests_per_test * 100.0) / write_number);
 
     $display("\n\n***********************************************************");
     $display("***  THIS IS A SELF-CHECKING TESTBENCH (YET). YOU DON'T ***");
@@ -85,11 +96,16 @@ module instr_register_test
     // addresses of 0, 1 and 2.  This will be replaceed with randomizeed
     // write_pointer values in a later lab
     //
-    static int temp = 0;
-    operand_a     <= $random(seed) % 16;  // between -15 and 15
-    operand_b     <= $unsigned($random) % 16;  // between 0 and 15
-    opcode        <= opcode_t'($unsigned($random) % 8);  // between 0 and 7, cast to opcode_t type
-    write_pointer <= temp++;
+    static int incremental_value = 0;
+    static int decremental_value = 31;
+    operand_a <= $random(seed) % 16;  // between -15 and 15
+    operand_b <= $unsigned($random) % 16;  // between 0 and 15
+    opcode    <= opcode_t'($unsigned($random) % 8);  // between 0 and 7, cast to opcode_t type
+    case (write_order)
+      0: write_pointer <= incremental_value++;
+      1: write_pointer <= $unsigned($random) % 32;
+      2: write_pointer <= decremental_value--;
+    endcase
   endfunction : randomize_transaction
 
   function void print_transaction;
