@@ -2,3 +2,5 @@ lab*/work/
 lab*/*.txt
 lab2/SystemVerilog for Verification - A Guide to Learning the Testbench Language Features 3rd edition.pdf
 *.wlf
+/sim
+transcript
