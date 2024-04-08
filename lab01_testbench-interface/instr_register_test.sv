@@ -124,6 +124,7 @@ module instr_register_test
     $display("  result = %0d\n", instruction_word.result);
     //
     // TEMA : DE SCRIS IN FISIER DETALII DESPRE TEST, DACA A TRECUT, CE A TRECUT, CU CE PARAMETRII AM APELAT ETC
+    // referinta: https://www.chipverify.com/systemverilog/systemverilog-file-io
     //
   endfunction : print_results
 
