@@ -20,8 +20,9 @@ module instr_register_test
 );
 
   timeunit 1ns / 1ns;
-  parameter read_number = 30, write_number = 30;
-  parameter write_order = 2, read_order = 2;
+  parameter READ_NUMBER = 30, WRITE_NUMBER = 30;
+  parameter WRITE_ORDER = 2, READ_ORDER = 2;
+  parameter CASE_NAME;
   int number_of_errors_per_test = 0;
   int failed_tests_per_test = 0;
   int seed = 555;
@@ -49,7 +50,7 @@ module instr_register_test
     @(posedge clk) load_en = 1'b1;  // enable writing to register
     // A.M. 9:19 - 11/3/2024 
     //repeat (3) begin
-    repeat (write_number) begin
+    repeat (WRITE_NUMBER) begin
       @(posedge clk) randomize_transaction;
       @(negedge clk) print_transaction;
       save_test_data;
@@ -60,12 +61,12 @@ module instr_register_test
     $display("\nReading back the same register locations written...");
     // A.M. 9:19 - 11/3/2024 
     // for (int i=0; i<=2; i++) begin
-    for (int i = 0; i <= read_number; i++) begin
+    for (int i = 0; i <= READ_NUMBER; i++) begin
       // later labs will replace this loop with iterating through a
       // scoreboard to determine which addresses were written and
       // the expected values to be read back
       @(posedge clk)
-        case (read_order)
+        case (READ_ORDER)
           0: read_pointer = i;
           1: read_pointer = $unsigned($random) % 32;
           2: read_pointer = 31 - (i % 32);
@@ -78,7 +79,7 @@ module instr_register_test
     @(posedge clk);
     $display("\nNumber of errors per transactions: %0d", number_of_errors_per_test);
     $display("\nNumber of failed tests: %0d", failed_tests_per_test);
-    $display("\nFailed tests percentage: %0.2f%%", (failed_tests_per_test * 100.0) / write_number);
+    $display("\nFailed tests percentage: %0.2f%%", (failed_tests_per_test * 100.0) / WRITE_NUMBER);
 
     $display("\n\n***********************************************************");
     $display("***  THIS IS A SELF-CHECKING TESTBENCH (YET). YOU DON'T ***");
@@ -101,7 +102,7 @@ module instr_register_test
     operand_a <= $random(seed) % 16;  // between -15 and 15
     operand_b <= $unsigned($random) % 16;  // between 0 and 15
     opcode    <= opcode_t'($unsigned($random) % 8);  // between 0 and 7, cast to opcode_t type
-    case (write_order)
+    case (WRITE_ORDER)
       0: write_pointer <= incremental_value++;
       1: write_pointer <= $unsigned($random) % 32;
       2: write_pointer <= decremental_value--;
@@ -121,6 +122,9 @@ module instr_register_test
     $display("  operand_a = %0d", instruction_word.op_a);
     $display("  operand_b = %0d", instruction_word.op_b);
     $display("  result = %0d\n", instruction_word.result);
+    //
+    // TEMA : DE SCRIS IN FISIER DETALII DESPRE TEST, DACA A TRECUT, CE A TRECUT, CU CE PARAMETRII AM APELAT ETC
+    //
   endfunction : print_results
 
   function void check_result;
@@ -169,5 +173,9 @@ module instr_register_test
       MOD:   local_result = operand_b ? operand_a % operand_b : {64{1'b0}};
     endcase
     iw_reg_test[write_pointer] = '{opcode, operand_a, operand_b, local_result};
+  endfunction : save_test_data
+
+  function void save_test_data;
+    
   endfunction : save_test_data
 endmodule : instr_register_test

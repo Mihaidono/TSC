@@ -3,3 +3,4 @@ lab2/SystemVerilog for Verification - A Guide to Learning the Testbench Language
 *.wlf
 /sim
 transcript
+reports
