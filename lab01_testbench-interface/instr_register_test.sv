@@ -26,6 +26,8 @@ module instr_register_test
   int number_of_errors_per_test = 0;
   int failed_tests_per_test = 0;
   int seed = 555;
+  string filename = $sformatf("../sim/%s", CASE_NAME);
+
   instruction_t iw_reg_test[0:31];
 
   initial begin
@@ -77,10 +79,11 @@ module instr_register_test
     end
 
     @(posedge clk);
-    $display("\nNumber of errors per transactions: %0d", number_of_errors_per_test);
-    $display("\nNumber of failed tests: %0d", failed_tests_per_test);
-    $display("\nFailed tests percentage: %0.2f%%", (failed_tests_per_test * 100.0) / WRITE_NUMBER);
-
+    fd= $fopen(filename,+a)
+    $display(fd,"\nNumber of errors per transactions: %0d", number_of_errors_per_test);
+    $display(fd,"\nNumber of failed tests: %0d", failed_tests_per_test);
+    $display(fd,"\nFailed tests percentage: %0.2f%%", (failed_tests_per_test * 100.0) / WRITE_NUMBER);
+    $fclose(fd);
     $display("\n\n***********************************************************");
     $display("***  THIS IS A SELF-CHECKING TESTBENCH (YET). YOU DON'T ***");
     $display("***  NEED TO VISUALLY VERIFY THAT THE OUTPUT VALUES     ***");
@@ -110,22 +113,23 @@ module instr_register_test
   endfunction : randomize_transaction
 
   function void print_transaction;
-    $display("Writing to register location %0d: ", write_pointer);
-    $display("  opcode = %0d (%s)", opcode, opcode.name);
-    $display("  operand_a = %0d", operand_a);
-    $display("  operand_b = %0d\n", operand_b);
+    fd= $fopen(filename,+a)
+    $display(fd,"Writing to register location %0d: ", write_pointer);
+    $display(fd,"  opcode = %0d (%s)", opcode, opcode.name);
+    $display(fd,"  operand_a = %0d", operand_a);
+    $display(fd,"  operand_b = %0d\n", operand_b);
+    $fclose(fd);
+
   endfunction : print_transaction
 
   function void print_results;
-    $display("Read from register location %0d: ", read_pointer);
-    $display("  opcode = %0d (%s)", instruction_word.opc, instruction_word.opc.name);
-    $display("  operand_a = %0d", instruction_word.op_a);
-    $display("  operand_b = %0d", instruction_word.op_b);
-    $display("  result = %0d\n", instruction_word.result);
-    //
-    // TEMA : DE SCRIS IN FISIER DETALII DESPRE TEST, DACA A TRECUT, CE A TRECUT, CU CE PARAMETRII AM APELAT ETC
-    // referinta: https://www.chipverify.com/systemverilog/systemverilog-file-io
-    //
+    fd= $fopen(filename,+a)
+    $display(fd,"Read from register location %0d: ", read_pointer);
+    $display(fd,"  opcode = %0d (%s)", instruction_word.opc, instruction_word.opc.name);
+    $display(fd,"  operand_a = %0d", instruction_word.op_a);
+    $display(fd,"  operand_b = %0d", instruction_word.op_b);
+    $display(fd,"  result = %0d\n", instruction_word.result);
+    $fclose(fd);
   endfunction : print_results
 
   function void check_result;
@@ -174,9 +178,5 @@ module instr_register_test
       MOD:   local_result = operand_b ? operand_a % operand_b : {64{1'b0}};
     endcase
     iw_reg_test[write_pointer] = '{opcode, operand_a, operand_b, local_result};
-  endfunction : save_test_data
-
-  function void save_test_data;
-    
   endfunction : save_test_data
 endmodule : instr_register_test
