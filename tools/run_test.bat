@@ -10,5 +10,5 @@ cd ../sim
 :: vsim -c   -do run.do 
 
 :: sa apelam scriptul cu argumente
-vsim -%5 -do "do run.do %1 %2 %3 %4 %6"
+vsim -%5 -do "do run.do %1 %2 %3 %4 %6 %7"
 cd ../tools
